@@ -7,15 +7,22 @@ namespace Cw1
 {
     public class Program
     {
-        static string defaultAddress = "https://www.pja.edu.pl";
-
         public static async Task Main(string[] args)
         {
             string address;
-            address = SetAddress(args);
+            HttpResponseMessage response = null;
             var httpClient = new HttpClient();
-            var response = await httpClient.GetAsync(address); 
-            if(response.IsSuccessStatusCode)
+            try
+            {
+                address = SetAddress(args);
+                response = await httpClient.GetAsync(address);
+            } catch (HttpRequestException ex) {
+                Console.WriteLine("Błąd w czasie pobierania strony"); 
+            } catch  (Exception ex)
+            {
+                Console.WriteLine(ex); 
+            }
+            if (response!=null && response.IsSuccessStatusCode)
             {
                 var html = await response.Content.ReadAsStringAsync();
                 var regex = new Regex("[a-z0-9]+@[a-z.]+");
@@ -26,6 +33,7 @@ namespace Cw1
                     Console.WriteLine(match); 
                 }
             }
+            httpClient.Dispose(); 
         }
 
         private static string SetAddress(string[] args)
@@ -37,7 +45,12 @@ namespace Cw1
             }
             else
             {
-                address = defaultAddress;
+                throw new ArgumentNullException(); 
+            }
+
+            if (!Uri.IsWellFormedUriString(address, UriKind.RelativeOrAbsolute))
+            {
+                throw new ArgumentException(); 
             }
             return address;
         }
